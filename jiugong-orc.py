@@ -33,6 +33,43 @@ ret9, template9 = cv2.threshold(template9, 127, 255, cv2.THRESH_BINARY)
 templateList = [template1, template2, template3, template4, template5, template6, template7, template8, template9]
 
 
+def fillUpList(new_num, new_pos, h, w):
+    """
+    judge each position's index for the right sequence
+    :param new_num: [8, 4, 9, 2]
+    :param new_pos: [(3, 2), (125, 3), (128, 80), (128, 164)]
+    :param h: h for the img
+    :param w: w for the img
+    :return:
+    """
+    countlist = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    for i in range(4):
+        if new_pos[i][0] < w // 3:
+            if new_pos[i][1] < h // 3:
+                countlist[0] = new_num[i]
+            elif h // 3 <= new_pos[i][1] < 2 * h // 3:
+                countlist[3] = new_num[i]
+            else:
+                countlist[6] = new_num[i]
+        elif w // 3 <= new_pos[i][0] < 2 * w // 3:
+            if new_pos[i][1] < h // 3:
+                countlist[1] = new_num[i]
+            elif h // 3 <= new_pos[i][1] < 2 * h // 3:
+                countlist[4] = new_num[i]
+            else:
+                countlist[7] = new_num[i]
+        else:
+            if new_pos[i][1] < h // 3:
+                countlist[2] = new_num[i]
+            elif h // 3 <= new_pos[i][1] < 2 * h // 3:
+                countlist[5] = new_num[i]
+            else:
+                countlist[8] = new_num[i]
+
+    # print(countlist)
+    return countlist
+
+
 class MainWindow(QMainWindow):
 
     def __init__(self, parent=None):
@@ -69,6 +106,9 @@ class MainWindow(QMainWindow):
         self.horizontalSlider.setValue(49)
         self.horizontalSlider.valueChanged.connect(self.valueChange)
 
+        # label
+        self.label.setText("preparing")
+
     def mouseMoveEvent(self, e: QMouseEvent):  # 重写移动事件
         if self._tracking:
             self._endPos = e.pos() - self._startPos
@@ -86,73 +126,102 @@ class MainWindow(QMainWindow):
             self._endPos = None
 
     def on_click(self):
-        new_num = self.getCorrectSeq()
-        print("进入计算击杀顺序函数")
-        print(new_num)
-        global killstr
-        correct_list = []
-        kill_list = []
-        killstr = ""
+        # get the x, y, w, h
+        x = self.frameGeometry().x() + self.frame_5.frameGeometry().x()
+        y = self.frameGeometry().y() + self.frame_5.frameGeometry().y() + 80
+        w = self.frame_5.width()
+        h = self.frame_5.height()
 
-        sumlist = [[2, 7, 6, 9, 5, 1, 4, 3, 8],
-                   [2, 9, 4, 7, 5, 3, 6, 1, 8],
-                   [4, 3, 8, 9, 5, 1, 2, 7, 6],
-                   [4, 9, 2, 3, 5, 7, 8, 1, 6],
-                   [6, 1, 8, 7, 5, 3, 2, 9, 4],
-                   [6, 7, 2, 1, 5, 9, 8, 3, 4],
-                   [8, 1, 6, 3, 5, 7, 4, 9, 2],
-                   [8, 3, 4, 1, 5, 9, 6, 7, 2],
-                   ]
+        # 截图
+        img = pyautogui.screenshot(region=[x, y, w, h])  # x,y,w,h
+        # img = Image.open('./screenshot.png')
+        # img.save("./screenshot.png")
 
-        # 查找正确数组
-        for k in range(8):
-            correct_num = 0
-            for idx1 in range(6):
-                if sumlist[k][idx1] == new_num[0]:
-                    correct_num += 1
-                    for idx2 in range(idx1, 7):
-                        if sumlist[k][idx2] == new_num[1]:
-                            correct_num += 1
-                            for idx3 in range(idx1, 7):
-                                if sumlist[k][idx3] == new_num[2]:
-                                    correct_num += 1
-                                    for idx4 in range(idx1, 7):
-                                        if sumlist[k][idx4] == new_num[3]:
-                                            correct_num += 1
-            if correct_num == 4:
-                print(sumlist[k])
-                break
-        # 判断空余的顺序
-        # print(countlist)
-
-        # print("初始击杀顺序为", kill_list)
-
-        # 改进击杀顺序
-        if 6 in [kill_list[0], kill_list[1], kill_list[2], kill_list[3]] or 7 in [kill_list[0], kill_list[1],
-                                                                                  kill_list[2], kill_list[3]]:
-            killstr = "不适合击杀"
-            print("不适合击杀")
-        elif kill_list[4] not in [3, 5, 9] and 3 not in kill_list:
-            kill_list[4] = 3
-            killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(kill_list[4])
-            print("建议击杀顺序", kill_list)
-        elif kill_list[4] not in [3, 5, 9] and 5 not in kill_list:
-            kill_list[4] = 5
-            killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(kill_list[4])
-            print("建议击杀顺序", kill_list)
-        elif kill_list[4] not in [3, 5, 9] and 9 not in kill_list:
-            kill_list[4] = 9
-            killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(kill_list[4])
-            print("建议击杀顺序", kill_list)
-        elif kill_list[4] in [3, 5, 9]:
-            killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(kill_list[4])
-            print("建议击杀顺序", kill_list)
+        # img = cv2.cvtColor(np.asarray(img), cv2.COLOR_BGR2GRAY)
+        # orc
+        res_num, res_pos = orc(screenshot=img, templateList=templateList)
+        if len(res_num) != 4:
+            self.label.setText("识别错误")
         else:
-            killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(kill_list[4])
+            # return res_num, res_pos, x, y, h, w
 
-        # killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(kill_list[4])
-        print(killstr)
-        self.label_2.setText(killstr)
+            # res_num, res_pos, x, y, h, w = self.getImg()
+            new_num, new_pos = correctPos(res_num, res_pos)
+            print("-----------------------")
+            print(new_num)
+            print(new_pos)
+            countlist = fillUpList(new_num=new_num, new_pos=new_pos, h=h, w=w)
+            print(countlist)
+            print("进入计算击杀顺序函数")
+
+            global killstr
+            correct_list = []
+            kill_list = []
+            killstr = ""
+
+            sumlist = [[2, 7, 6, 9, 5, 1, 4, 3, 8],
+                       [2, 9, 4, 7, 5, 3, 6, 1, 8],
+                       [4, 3, 8, 9, 5, 1, 2, 7, 6],
+                       [4, 9, 2, 3, 5, 7, 8, 1, 6],
+                       [6, 1, 8, 7, 5, 3, 2, 9, 4],
+                       [6, 7, 2, 1, 5, 9, 8, 3, 4],
+                       [8, 1, 6, 3, 5, 7, 4, 9, 2],
+                       [8, 3, 4, 1, 5, 9, 6, 7, 2],
+                       ]
+
+            # 查找正确数组
+            for k in range(8):
+                correct_num = 0
+                for idx in range(9):
+                    if countlist[idx] == 0:
+                        continue
+                    elif countlist[idx] != sumlist[k][idx]:
+                        break
+                    elif countlist[idx] == sumlist[k][idx]:
+                        correct_num += 1
+                if correct_num >= 4:
+                    correct_list = sumlist[k]
+                    break
+
+            # 判断空余的顺序
+            # print(correct_list)
+            for i in range(9):
+                if countlist[i] == 0:
+                    kill_list.append(correct_list[i])
+
+            print("初始击杀顺序为", kill_list)
+
+            # 改进击杀顺序
+            if 6 in [kill_list[0], kill_list[1], kill_list[2], kill_list[3]] or 7 in [kill_list[0], kill_list[1],
+                                                                                      kill_list[2], kill_list[3]]:
+                killstr = "不适合击杀"
+                print("不适合击杀")
+            elif kill_list[4] not in [3, 5, 9] and 3 not in kill_list:
+                kill_list[4] = 3
+                killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(
+                    kill_list[4])
+                print("建议击杀顺序", kill_list)
+            elif kill_list[4] not in [3, 5, 9] and 5 not in kill_list:
+                kill_list[4] = 5
+                killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(
+                    kill_list[4])
+                print("建议击杀顺序", kill_list)
+            elif kill_list[4] not in [3, 5, 9] and 9 not in kill_list:
+                kill_list[4] = 9
+                killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(
+                    kill_list[4])
+                print("建议击杀顺序", kill_list)
+            elif kill_list[4] in [3, 5, 9]:
+                killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(
+                    kill_list[4])
+                print("建议击杀顺序", kill_list)
+            else:
+                killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(
+                    kill_list[4])
+
+            # killstr = str(kill_list[0]) + str(kill_list[1]) + str(kill_list[2]) + str(kill_list[3]) + str(kill_list[4])
+            print("击杀顺序为:", killstr)
+            self.label.setText(killstr)
 
     def valueChange(self):
         # 输出当前地刻度值，利用刻度值来调节窗口大小
@@ -170,22 +239,17 @@ class MainWindow(QMainWindow):
         h = self.frame_5.height()
 
         # 截图
-        # img = pyautogui.screenshot(region=[x, y, w, h])  # x,y,w,h
-        img = Image.open('./screenshot.png')
+        img = pyautogui.screenshot(region=[x, y, w, h])  # x,y,w,h
+        # img = Image.open('./screenshot.png')
         # img.save("./screenshot.png")
 
         # img = cv2.cvtColor(np.asarray(img), cv2.COLOR_BGR2GRAY)
         # orc
         res_num, res_pos = orc(screenshot=img, templateList=templateList)
+
         # print(res_num)
         # print(res_pos)
-        return res_num, res_pos
-
-    def getCorrectSeq(self):
-        res_num, res_pos = self.getImg()
-        new_num, new_pos = correctPos(res_num, res_pos)
-        # print(new_num)
-        return new_num
+        return res_num, res_pos, x, y, h, w
 
 
 if __name__ == '__main__':
