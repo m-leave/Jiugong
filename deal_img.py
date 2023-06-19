@@ -39,6 +39,7 @@ def orc(screenshot, templateList):
     res_num = []
     res_pos = []
     # max = 0
+    print("start orc -------------------------------")
     for i in range(0, 9):
         h, w = img.shape[:2]
         # print(h, w)
@@ -68,9 +69,9 @@ def orc(screenshot, templateList):
             # cv2.rectangle(img, top_left, bottom_right, (0, 0, 0), 2)
             # cv2.putText(img, str(i + 1), (top_left[0], top_left[1] + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
             print(i + 1, max_val, "匹配成功")
-        else:
-            print(i + 1, max_val)
-
+        # else:
+            # print(i + 1, max_val)
+    print("End orc -------------------------------")
     return res_num, res_pos
 
 
